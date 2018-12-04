@@ -1,40 +1,30 @@
-
-# coding: utf-8
-
-# ### 1. 引入python3特性
-# - `__future__` 在python2代码中引入python3特性
-# - `division`表示使用python3的除法，不能整除返回小数
-# - `print_function` 表示使用python3的print方法
-
-# In[1]:
-
+# coding=utf-8
+# Copyright 2018 The Google AI Language Team Authors.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+"""BERT finetuning runner."""
 
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-
-# ### 2. 加载功能模块
-
-# In[2]:
-
-
-import collections # 标准库模块
-import csv # 标准库模块
-import os # 标准库模块
-import modeling # 当前目录下的模块
-import optimization # 当前目录下的模块
-import tokenization # 当前目录下的模块
+import collections
+import csv
+import os
+import modeling
+import optimization
+import tokenization
 import tensorflow as tf
-
-
-# ### 3. 配置命令行参数
-# - 执行这个程序时的可选参数
-# - 通过`DEFINE_string` `DEFINE_bool` `DEFINE_integer` `DEFINE_float`指定四类参数string、boolean、int和float
-# - 每个DEFINE方法包含三个参数，分别为：命令行参数名称、默认值和说明。
-
-# In[3]:
-
 
 flags = tf.flags
 
@@ -42,29 +32,29 @@ FLAGS = flags.FLAGS
 
 ## Required parameters
 flags.DEFINE_string(
-    "data_dir", None, # 数据集的路径
+    "data_dir", None,
     "The input data dir. Should contain the .tsv files (or other data files) "
     "for the task.")
 
 flags.DEFINE_string(
-    "bert_config_file", None, # bert_config.json的路径（BERT-Base下）
+    "bert_config_file", None,
     "The config json file corresponding to the pre-trained BERT model. "
     "This specifies the model architecture.")
 
-flags.DEFINE_string("task_name", None, "The name of the task to train.") # 在main函数中指定
+flags.DEFINE_string("task_name", None, "The name of the task to train.")
 
-flags.DEFINE_string("vocab_file", None, # vocab.txt的路径（BERT-Base下）
+flags.DEFINE_string("vocab_file", None,
                     "The vocabulary file that the BERT model was trained on.")
 
 flags.DEFINE_string(
-    "output_dir", None, # 输出路径
+    "output_dir", None,
     "The output directory where the model checkpoints will be written.")
 
 ## Other parameters
 
 flags.DEFINE_string(
-    "init_checkpoint", None, # bert_model.ckpt的路径（BERT-Base下），即预训练参数
-    "Initial checkpoint (usually from a pre-trained BERT model).") # 以预训练参数为初始参数进行训练
+    "init_checkpoint", None,
+    "Initial checkpoint (usually from a pre-trained BERT model).")
 
 flags.DEFINE_bool(
     "do_lower_case", True,
@@ -77,13 +67,13 @@ flags.DEFINE_integer(
     "Sequences longer than this will be truncated, and sequences shorter "
     "than this will be padded.")
 
-flags.DEFINE_bool("do_train", False, "Whether to run training.") # 在train集训练改为True
+flags.DEFINE_bool("do_train", False, "Whether to run training.")
 
-flags.DEFINE_bool("do_eval", False, "Whether to run eval on the dev set.") # 在dev集评估改为True
+flags.DEFINE_bool("do_eval", False, "Whether to run eval on the dev set.")
 
 flags.DEFINE_bool(
     "do_predict", False,
-    "Whether to run the model in inference mode on the test set.") # 在test集预测改为True
+    "Whether to run the model in inference mode on the test set.")
 
 flags.DEFINE_integer("train_batch_size", 32, "Total batch size for training.")
 
@@ -101,12 +91,12 @@ flags.DEFINE_float(
     "Proportion of training to perform linear learning rate warmup for. "
     "E.g., 0.1 = 10% of training.")
 
-flags.DEFINE_integer("save_checkpoints_steps", 1000, # 每千次优化保存一次参数
+flags.DEFINE_integer("save_checkpoints_steps", 1000,
                      "How often to save the model checkpoint.")
 
 flags.DEFINE_integer("iterations_per_loop", 1000,
                      "How many steps to make in each estimator call.")
-#-------------------------以下为TPU相关参数------------------------------#
+
 flags.DEFINE_bool("use_tpu", False, "Whether to use TPU or GPU/CPU.")
 
 tf.flags.DEFINE_string(
@@ -134,12 +124,6 @@ flags.DEFINE_integer(
     "Only used if `use_tpu` is True. Total number of TPU cores to use.")
 
 
-# ### 4. 数据预处理
-# - 封装样例：将tsv数据文件中的每个样例封装成带有四个属性的对象
-
-# In[ ]:
-
-
 class InputExample(object):
   """A single training/test example for simple sequence classification."""
 
@@ -161,11 +145,6 @@ class InputExample(object):
     self.label = label
 
 
-# - 封装输入特征：先将样例对象转为特征，然后输入网络
-
-# In[1]:
-
-
 class InputFeatures(object):
   """A single set of features of data."""
 
@@ -174,11 +153,6 @@ class InputFeatures(object):
     self.input_mask = input_mask
     self.segment_ids = segment_ids
     self.label_id = label_id
-
-
-# - 数据预处理基类：子类需要实现四个get方法
-
-# In[2]:
 
 
 class DataProcessor(object):
@@ -209,11 +183,6 @@ class DataProcessor(object):
       for line in reader:
         lines.append(line)
       return lines
-
-
-# - XNLI数据预处理：继承基类
-
-# In[ ]:
 
 
 class XnliProcessor(DataProcessor):
@@ -264,11 +233,6 @@ class XnliProcessor(DataProcessor):
     return ["contradiction", "entailment", "neutral"]
 
 
-# - MNLI数据预处理
-
-# In[ ]:
-
-
 class MnliProcessor(DataProcessor):
   """Processor for the MultiNLI data set (GLUE version)."""
 
@@ -308,11 +272,6 @@ class MnliProcessor(DataProcessor):
       examples.append(
           InputExample(guid=guid, text_a=text_a, text_b=text_b, label=label))
     return examples
-
-
-# - MRPC数据预处理
-
-# In[ ]:
 
 
 class MrpcProcessor(DataProcessor):
@@ -355,11 +314,6 @@ class MrpcProcessor(DataProcessor):
     return examples
 
 
-# - COLA数据预处理
-
-# In[3]:
-
-
 class ColaProcessor(DataProcessor):
   """Processor for the CoLA data set (GLUE version)."""
 
@@ -400,16 +354,15 @@ class ColaProcessor(DataProcessor):
           InputExample(guid=guid, text_a=text_a, text_b=None, label=label))
     return examples
 
-
-# - SST2数据预处理
-
-# In[ ]:
-
+# add SST2 processor
 class SST2Processor(DataProcessor):
-  ''' Processor for the SST2 data set (GLUE version). '''
+    """Processor for the SST2 data set (GLUE version)."""
+
   def get_train_examples(self, data_dir):
+    """See base class."""
     return self._create_examples(
         self._read_tsv(os.path.join(data_dir, "train.tsv")), "train")
+
   def get_dev_examples(self, data_dir):
     """See base class."""
     return self._create_examples(
@@ -443,33 +396,6 @@ class SST2Processor(DataProcessor):
     return examples
 
 
-# - 将单个样例转为输入特征
-#     - [CLS]表示样例开始，[SEP]表示sequence结束
-#     - `segmet_id`：指定sequence编号
-#     - `input_ids`：样例的每个token在vocab.txt中对应的索引列表
-#     - `input_mask`：样例的每个token对应的input_mask为1
-#     - 如果样例的token个数小于`max_seq_length`，用0填充上面三个变量
-#     - `label_id`：样例的label在`label_list`中的索引
-
-# In[ ]:
-
-
-def _truncate_seq_pair(tokens_a, tokens_b, max_length):
-  """Truncates a sequence pair in place to the maximum length."""
-
-  # This is a simple heuristic which will always truncate the longer sequence
-  # one token at a time. This makes more sense than truncating an equal percent
-  # of tokens from each, since if one sequence is very short then each token
-  # that's truncated likely contains more information than a longer sequence.
-  while True:
-    total_length = len(tokens_a) + len(tokens_b)
-    if total_length <= max_length:
-      break
-    if len(tokens_a) > len(tokens_b):
-      tokens_a.pop()
-    else:
-      tokens_b.pop()
-    
 def convert_single_example(ex_index, example, label_list, max_seq_length,
                            tokenizer):
   """Converts a single `InputExample` into a single `InputFeatures`."""
@@ -562,20 +488,6 @@ def convert_single_example(ex_index, example, label_list, max_seq_length,
   return feature
 
 
-# - 将特征写入TFRecord文件
-#     1. 为了将特征写入TFRecord，需要先将特征封装成example
-#     2. 一个example包含一个features，一个features包含多个feature
-#     3. 一个feature由key-value对组成，value必须是BytesList/FloatList/Int64List中的一种
-#     4. 封装流程：
-#         1. 使用Feature将value封装成指定类型
-#         2. 使用有序字典封装key-value（特征名-特征值）对
-#         3. 使用Features封装有序字典
-#         4. 使用Example封装Features
-#     5. Example/Features/Feature可理解为描述数据结构的协议，类似于Json
-
-# In[ ]:
-
-
 def file_based_convert_examples_to_features(
     examples, label_list, max_seq_length, tokenizer, output_file):
   """Convert a set of `InputExample`s to a TFRecord file."""
@@ -601,61 +513,6 @@ def file_based_convert_examples_to_features(
 
     tf_example = tf.train.Example(features=tf.train.Features(feature=features))
     writer.write(tf_example.SerializeToString())
-
-
-# ### 5. 创建模型
-
-# In[ ]:
-
-
-def create_model(bert_config, is_training, input_ids, input_mask, segment_ids,
-                 labels, num_labels, use_one_hot_embeddings):
-  """Creates a classification model."""
-  model = modeling.BertModel(
-      config=bert_config,
-      is_training=is_training,
-      input_ids=input_ids,
-      input_mask=input_mask,
-      token_type_ids=segment_ids,
-      use_one_hot_embeddings=use_one_hot_embeddings)
-
-  # In the demo, we are doing a simple classification task on the entire
-  # segment.
-  #
-  # If you want to use the token-level output, use model.get_sequence_output()
-  # instead.
-  output_layer = model.get_pooled_output()
-
-  hidden_size = output_layer.shape[-1].value
-
-  output_weights = tf.get_variable(
-      "output_weights", [num_labels, hidden_size],
-      initializer=tf.truncated_normal_initializer(stddev=0.02))
-
-  output_bias = tf.get_variable(
-      "output_bias", [num_labels], initializer=tf.zeros_initializer())
-
-  with tf.variable_scope("loss"):
-    if is_training:
-      # I.e., 0.1 dropout
-      output_layer = tf.nn.dropout(output_layer, keep_prob=0.9)
-
-    logits = tf.matmul(output_layer, output_weights, transpose_b=True)
-    logits = tf.nn.bias_add(logits, output_bias)
-    probabilities = tf.nn.softmax(logits, axis=-1)
-    log_probs = tf.nn.log_softmax(logits, axis=-1)
-
-    one_hot_labels = tf.one_hot(labels, depth=num_labels, dtype=tf.float32)
-
-    per_example_loss = -tf.reduce_sum(one_hot_labels * log_probs, axis=-1)
-    loss = tf.reduce_mean(per_example_loss)
-
-    return (loss, per_example_loss, logits, probabilities)
-
-
-# ### 6. 调用模型
-
-# In[ ]:
 
 
 def file_based_input_fn_builder(input_file, seq_length, is_training,
@@ -704,6 +561,67 @@ def file_based_input_fn_builder(input_file, seq_length, is_training,
 
   return input_fn
 
+
+def _truncate_seq_pair(tokens_a, tokens_b, max_length):
+  """Truncates a sequence pair in place to the maximum length."""
+
+  # This is a simple heuristic which will always truncate the longer sequence
+  # one token at a time. This makes more sense than truncating an equal percent
+  # of tokens from each, since if one sequence is very short then each token
+  # that's truncated likely contains more information than a longer sequence.
+  while True:
+    total_length = len(tokens_a) + len(tokens_b)
+    if total_length <= max_length:
+      break
+    if len(tokens_a) > len(tokens_b):
+      tokens_a.pop()
+    else:
+      tokens_b.pop()
+
+
+def create_model(bert_config, is_training, input_ids, input_mask, segment_ids,
+                 labels, num_labels, use_one_hot_embeddings):
+  """Creates a classification model."""
+  model = modeling.BertModel(
+      config=bert_config,
+      is_training=is_training,
+      input_ids=input_ids,
+      input_mask=input_mask,
+      token_type_ids=segment_ids,
+      use_one_hot_embeddings=use_one_hot_embeddings)
+
+  # In the demo, we are doing a simple classification task on the entire
+  # segment.
+  #
+  # If you want to use the token-level output, use model.get_sequence_output()
+  # instead.
+  output_layer = model.get_pooled_output()
+
+  hidden_size = output_layer.shape[-1].value
+
+  output_weights = tf.get_variable(
+      "output_weights", [num_labels, hidden_size],
+      initializer=tf.truncated_normal_initializer(stddev=0.02))
+
+  output_bias = tf.get_variable(
+      "output_bias", [num_labels], initializer=tf.zeros_initializer())
+
+  with tf.variable_scope("loss"):
+    if is_training:
+      # I.e., 0.1 dropout
+      output_layer = tf.nn.dropout(output_layer, keep_prob=0.9)
+
+    logits = tf.matmul(output_layer, output_weights, transpose_b=True)
+    logits = tf.nn.bias_add(logits, output_bias)
+    probabilities = tf.nn.softmax(logits, axis=-1)
+    log_probs = tf.nn.log_softmax(logits, axis=-1)
+
+    one_hot_labels = tf.one_hot(labels, depth=num_labels, dtype=tf.float32)
+
+    per_example_loss = -tf.reduce_sum(one_hot_labels * log_probs, axis=-1)
+    loss = tf.reduce_mean(per_example_loss)
+
+    return (loss, per_example_loss, logits, probabilities)
 
 
 def model_fn_builder(bert_config, num_labels, init_checkpoint, learning_rate,
@@ -789,10 +707,76 @@ def model_fn_builder(bert_config, num_labels, init_checkpoint, learning_rate,
   return model_fn
 
 
+# This function is not used by this file but is still used by the Colab and
+# people who depend on it.
+def input_fn_builder(features, seq_length, is_training, drop_remainder):
+  """Creates an `input_fn` closure to be passed to TPUEstimator."""
 
-# ### 7. 执行代码
+  all_input_ids = []
+  all_input_mask = []
+  all_segment_ids = []
+  all_label_ids = []
 
-# In[ ]:
+  for feature in features:
+    all_input_ids.append(feature.input_ids)
+    all_input_mask.append(feature.input_mask)
+    all_segment_ids.append(feature.segment_ids)
+    all_label_ids.append(feature.label_id)
+
+  def input_fn(params):
+    """The actual input function."""
+    batch_size = params["batch_size"]
+
+    num_examples = len(features)
+
+    # This is for demo purposes and does NOT scale to large data sets. We do
+    # not use Dataset.from_generator() because that uses tf.py_func which is
+    # not TPU compatible. The right way to load data is with TFRecordReader.
+    d = tf.data.Dataset.from_tensor_slices({
+        "input_ids":
+            tf.constant(
+                all_input_ids, shape=[num_examples, seq_length],
+                dtype=tf.int32),
+        "input_mask":
+            tf.constant(
+                all_input_mask,
+                shape=[num_examples, seq_length],
+                dtype=tf.int32),
+        "segment_ids":
+            tf.constant(
+                all_segment_ids,
+                shape=[num_examples, seq_length],
+                dtype=tf.int32),
+        "label_ids":
+            tf.constant(all_label_ids, shape=[num_examples], dtype=tf.int32),
+    })
+
+    if is_training:
+      d = d.repeat()
+      d = d.shuffle(buffer_size=100)
+
+    d = d.batch(batch_size=batch_size, drop_remainder=drop_remainder)
+    return d
+
+  return input_fn
+
+
+# This function is not used by this file but is still used by the Colab and
+# people who depend on it.
+def convert_examples_to_features(examples, label_list, max_seq_length,
+                                 tokenizer):
+  """Convert a set of `InputExample`s to a list of `InputFeatures`."""
+
+  features = []
+  for (ex_index, example) in enumerate(examples):
+    if ex_index % 10000 == 0:
+      tf.logging.info("Writing example %d of %d" % (ex_index, len(examples)))
+
+    feature = convert_single_example(ex_index, example, label_list,
+                                     max_seq_length, tokenizer)
+
+    features.append(feature)
+  return features
 
 
 def main(_):
@@ -803,7 +787,6 @@ def main(_):
       "mnli": MnliProcessor,
       "mrpc": MrpcProcessor,
       "xnli": XnliProcessor,
-      #加入SST5数据预处理
       "sst2": SST2Processor,
   }
 
@@ -962,7 +945,6 @@ def main(_):
         writer.write(output_line)
 
 
-
 if __name__ == "__main__":
   flags.mark_flag_as_required("data_dir")
   flags.mark_flag_as_required("task_name")
@@ -970,81 +952,3 @@ if __name__ == "__main__":
   flags.mark_flag_as_required("bert_config_file")
   flags.mark_flag_as_required("output_dir")
   tf.app.run()
-
-
-# -------------未使用的代码--------------------
-
-# In[ ]:
-
-
-# This function is not used by this file but is still used by the Colab and
-# people who depend on it.
-def convert_examples_to_features(examples, label_list, max_seq_length,
-                                 tokenizer):
-  """Convert a set of `InputExample`s to a list of `InputFeatures`."""
-
-  features = []
-  for (ex_index, example) in enumerate(examples):
-    if ex_index % 10000 == 0:
-      tf.logging.info("Writing example %d of %d" % (ex_index, len(examples)))
-
-    feature = convert_single_example(ex_index, example, label_list,
-                                     max_seq_length, tokenizer)
-
-    features.append(feature)
-  return features
-
-
-# This function is not used by this file but is still used by the Colab and
-# people who depend on it.
-def input_fn_builder(features, seq_length, is_training, drop_remainder):
-  """Creates an `input_fn` closure to be passed to TPUEstimator."""
-
-  all_input_ids = []
-  all_input_mask = []
-  all_segment_ids = []
-  all_label_ids = []
-
-  for feature in features:
-    all_input_ids.append(feature.input_ids)
-    all_input_mask.append(feature.input_mask)
-    all_segment_ids.append(feature.segment_ids)
-    all_label_ids.append(feature.label_id)
-
-  def input_fn(params):
-    """The actual input function."""
-    batch_size = params["batch_size"]
-
-    num_examples = len(features)
-
-    # This is for demo purposes and does NOT scale to large data sets. We do
-    # not use Dataset.from_generator() because that uses tf.py_func which is
-    # not TPU compatible. The right way to load data is with TFRecordReader.
-    d = tf.data.Dataset.from_tensor_slices({
-        "input_ids":
-            tf.constant(
-                all_input_ids, shape=[num_examples, seq_length],
-                dtype=tf.int32),
-        "input_mask":
-            tf.constant(
-                all_input_mask,
-                shape=[num_examples, seq_length],
-                dtype=tf.int32),
-        "segment_ids":
-            tf.constant(
-                all_segment_ids,
-                shape=[num_examples, seq_length],
-                dtype=tf.int32),
-        "label_ids":
-            tf.constant(all_label_ids, shape=[num_examples], dtype=tf.int32),
-    })
-
-    if is_training:
-      d = d.repeat()
-      d = d.shuffle(buffer_size=100)
-
-    d = d.batch(batch_size=batch_size, drop_remainder=drop_remainder)
-    return d
-
-  return input_fn
-

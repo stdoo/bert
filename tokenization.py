@@ -155,7 +155,7 @@ class BasicTokenizer(object):
     # words in the English Wikipedia.).
     text = self._tokenize_chinese_chars(text)
 
-    orig_tokens = whitespace_tokenize(text)
+    orig_tokens = whitespace_tokenize(text) # 将string变为token list
     split_tokens = []
     for token in orig_tokens:
       if self.do_lower_case:
@@ -232,6 +232,9 @@ class BasicTokenizer(object):
 
     return False
 
+  # 清除'NULL'、'?'和控制字符，将换行符、制表符等空格符替换为单个空格
+  # text: string
+  # return: string
   def _clean_text(self, text):
     """Performs invalid character removal and whitespace cleanup on text."""
     output = []
