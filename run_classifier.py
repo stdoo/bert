@@ -405,8 +405,10 @@ class ColaProcessor(DataProcessor):
 
 # In[ ]:
 
+
 class SST2Processor(DataProcessor):
   ''' Processor for the SST2 data set (GLUE version). '''
+
   def get_train_examples(self, data_dir):
     return self._create_examples(
         self._read_tsv(os.path.join(data_dir, "train.tsv")), "train")
@@ -423,6 +425,51 @@ class SST2Processor(DataProcessor):
   def get_labels(self):
     """See base class."""
     return ["0", "1"]
+
+  def _create_examples(self, lines, set_type):
+    """Creates examples for the training and dev sets."""
+    examples = []
+    for (i, line) in enumerate(lines):
+      # Only the test set has a header
+      if i == 0:
+        continue
+      guid = "%s-%s" % (set_type, i)
+      if set_type == "test":
+        text_a = tokenization.convert_to_unicode(line[1])
+        label = None
+      else:
+        text_a = tokenization.convert_to_unicode(line[0])
+        label = tokenization.convert_to_unicode(line[1])
+      examples.append(
+          InputExample(guid=guid, text_a=text_a, text_b=None, label=label))
+    return examples
+
+
+# - SST5数据预处理
+
+# In[ ]:
+
+
+class SST5Processor(DataProcessor):
+  ''' Processor for the SST5 data set (GLUE version). '''
+
+  def get_train_examples(self, data_dir):
+    """See base class."""
+    return self._create_examples(
+        self._read_tsv(os.path.join(data_dir, "train.tsv")), "train")
+  def get_dev_examples(self, data_dir):
+    """See base class."""
+    return self._create_examples(
+        self._read_tsv(os.path.join(data_dir, "dev.tsv")), "dev")
+
+  def get_test_examples(self, data_dir):
+    """See base class."""
+    return self._create_examples(
+        self._read_tsv(os.path.join(data_dir, "test.tsv")), "test")
+
+  def get_labels(self):
+    """See base class."""
+    return ["0", "1", "2", "3", "4"]
 
   def _create_examples(self, lines, set_type):
     """Creates examples for the training and dev sets."""
@@ -803,8 +850,9 @@ def main(_):
       "mnli": MnliProcessor,
       "mrpc": MrpcProcessor,
       "xnli": XnliProcessor,
-      #加入SST5数据预处理
+      #加入SST2和SST5数据预处理
       "sst2": SST2Processor,
+      "sst5": SST5Processor,
   }
 
   if not FLAGS.do_train and not FLAGS.do_eval and not FLAGS.do_predict:
